@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dataStore = require("./dataStore");
+const cartService = require("./cartService");
 const app = express();
 const port = 3000;
 
@@ -45,6 +46,40 @@ app.get("/api/products/:id", (req, res) => {
         .json({ success: false, message: "Product not found" });
     }
     res.json({ success: true, product });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ============ Cart Routes ============
+
+/**
+ * POST /api/cart/add
+ * Add item to cart
+ * Body: { userId, productId, quantity }
+ */
+app.post("api/cart/add", (req, res) => {
+  try {
+    const { userId, productId, quantity } = req.body;
+    if (!userId || !productId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "userId and productId are required" });
+    }
+    const cart = cartService.addToCart(userId, productId, quantity);
+    res.json({ success: true, message: "Item added successfully", cart });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+/**
+ * GET /api/cart/:userId
+ * Get user's cart
+ */
+app.get('/api/cart/:userId', (req, res) => {
+  try {
+    const cart = cartService.getCart(req.params.userId);
+    res.json({ success: true, cart });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
