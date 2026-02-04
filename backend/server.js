@@ -124,4 +124,23 @@ app.delete("api/cart/delete", (req, res) => {
     res.json({ success: false, message: error.message });
   }
 });
+// ============ Checkout Route ============
+
+/**
+ * POST /api/checkout
+ * Process checkout
+ * Body: { userId, discountCode? }
+ */
+app.post("api/checkout", (req, res) => {
+  try {
+    const { userId, discountCode } = req.body;
+    if (!userId) {
+      return res.json({ success: false, message: "userId is required" });
+    }
+    const result = orderService.checkout(userId, discountCode);
+    res.json({ success: true, message: "Checkout successful", ...result });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+});
 module.exports = app;

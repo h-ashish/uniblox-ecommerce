@@ -1,0 +1,84 @@
+const dataStore = require("./dataStore");
+const discountService = require("./discountService");
+
+class OrderService {
+  /**
+   * Processes checkout and creates an order
+   * @param {string} userId - User identifier
+   * @param {string} discountCode - Optional discount code
+   * @returns {object} - Created order with discount info
+   */
+  checkout(userId, discountCode = null) {
+    //Validate cart
+    const cartValidation = cartService.validateCart(userId);
+    if (!cartValidation.isValid) {
+      throw new Error(cartValidation.message);
+    }
+
+    const cart = cartValidation.cart;
+    let discountInfo = null;
+    let appliedDiscount = null;
+
+    //Validate and apply discount if provided
+    if (discountCode) {
+      const validation = discountService.validateDiscountCode(discountCode);
+      if (!validation.isValid) {
+        throw new Error(validation.message);
+      }
+      discountInfo = validation.discountInfo;
+      appliedDiscount = discountService.applyDiscount(
+        cart.subtotal,
+        validation.discountPercentage,
+      );
+    }
+
+    //create order
+    const order = {
+      id: uuidv4(),
+      userId,
+      items: cart.items.map((item) => ({ ...item })), //Deep Copy
+      subtotal: cart.subtotal,
+      discount: appliedDiscount ? appliedDiscount.discount : 0,
+      finalAmount: appliedDiscount
+        ? appliedDiscount.finalAmount
+        : cart.subtotal,
+      discountCode: discountCode || null,
+      discountPercentage: appliedDiscount
+        ? appliedDiscount.discountPercentage
+        : 0,
+      createdAt: new Date().toISOString(),
+      status: "completed",
+    };
+
+    //save order
+    dataStore.createOrder(order);
+    // Mark discount code as used if applied
+    if (discountCode && discountInfo) {
+      discountService.markAsUsed(discountCode);
+    }
+
+    // Update product stock
+    this.updateProductStock(order.items);
+
+    // Clear cart
+    cartService.clearCart(userId);
+
+    // Check if this order qualifies for a new discount code
+    const currentOrderNumber = dataStore.getOrderCount();
+    const newDiscountCode =
+      discountService.generateDiscountCode(currentOrderNumber);
+
+    return {
+      order,
+      message: "Order placed successfully",
+      newDiscountCode: newDiscountCode
+        ? {
+            code: newDiscountCode.code,
+            discountPercentage: newDiscountCode.discountPercentage,
+            message: `Congratulations! You've earned a ${newDiscountCode.discountPercentage}% discount code for your next purchase!`,
+          }
+        : null,
+    };
+  }
+}
+module.exports = new OrderService();

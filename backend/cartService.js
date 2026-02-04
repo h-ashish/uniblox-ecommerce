@@ -143,6 +143,36 @@ class CartService {
       subtotal: parseFloat(subtotal.toFixed(2)),
     };
   }
+  /**
+   * Validates cart before checkout
+   * @param {string} userId - User identifier
+   * @returns {object} - Validation result
+   */
+  validateCart(userId) {
+    const cart = this.getCart(userId);
+
+    if (cart.items.length === 0) {
+      return { isValid: false, message: "Cart is empty" };
+    }
+
+    //Validate stock for each item
+    for (const item of cart.items) {
+      const product = dataStore.getProduct(item.productId);
+      if (!product) {
+        return {
+          isValid: false,
+          message: `Product ${item.name} not found`,
+        };
+      }
+      if (product.stock < item.quantity) {
+        return {
+          isValid: false,
+          message: `Insufficient stock for product ${item.name}. Only ${product.stock} items left in stock.`,
+        };
+      }
+    }
+    return { isValid: true, cart };
+  }
 }
 
 module.exports = new CartService();
