@@ -76,7 +76,7 @@ app.post("api/cart/add", (req, res) => {
  * GET /api/cart/:userId
  * Get user's cart
  */
-app.get('/api/cart/:userId', (req, res) => {
+app.get("/api/cart/:userId", (req, res) => {
   try {
     const cart = cartService.getCart(req.params.userId);
     res.json({ success: true, cart });
@@ -84,5 +84,44 @@ app.get('/api/cart/:userId', (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
-
+/**
+ * PUT /api/cart/update
+ * Update cart item quantity
+ * Body: { userId, productId, quantity }
+ */
+app.put("api/cart/update", (req, res) => {
+  try {
+    const { userId, productId, quantity } = req.body;
+    if (!userId || !productId || quantity === undefined) {
+      return res.json({
+        success: false,
+        message: "userId, productId and quantity are required",
+      });
+    }
+    const cart = cartService.updateCartItem(userId, productId, quantity);
+    res.json({ success: true, message: "Cart Updated successfully", cart });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+});
+/**
+ * DELETE /api/cart/remove
+ * Remove item from cart
+ * Body: { userId, productId }
+ */
+app.delete("api/cart/delete", (req, res) => {
+  try {
+    const { userId, productId } = req.body;
+    if (!userId || !productId) {
+      return res.json({
+        success: false,
+        message: "userId and productId are required",
+      });
+    }
+    const cart = cartService.removeFromCart(userId, productId);
+    res.json({ success: true, message: "Item removed successfully", cart });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+});
 module.exports = app;
