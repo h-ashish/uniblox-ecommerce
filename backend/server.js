@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dataStore = require("./dataStore");
 const cartService = require("./cartService");
+const orderService = require("./orderService");
 const app = express();
 const port = 3000;
 
@@ -141,6 +142,32 @@ app.post("api/checkout", (req, res) => {
     res.json({ success: true, message: "Checkout successful", ...result });
   } catch (error) {
     res.json({ success: false, message: error.message });
+  }
+});
+// ============ Order Routes ============
+
+/**
+ * GET /api/orders/:orderId
+ * Get order by ID
+ */
+app.get("/api/orders/:orderId", (req, res) => {
+  try {
+    const order = orderService.getOrder(req.params.orderId);
+    res.json({ success: true, order });
+  } catch (error) {
+    res.status(404).json({ success: false, message: error.message });
+  }
+});
+/**
+ * GET /api/orders/user/:userId
+ * Get all orders for a user
+ */
+app.get("/api/orders/user/:userId", (req, res) => {
+  try {
+    const orders = orderService.getUserOrders(req.params.userId);
+    res.json({ success: true, orders });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 module.exports = app;

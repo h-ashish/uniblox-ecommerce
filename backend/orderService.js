@@ -80,5 +80,27 @@ class OrderService {
         : null,
     };
   }
+
+  /**
+   * Gets order by ID
+   * @param {string} orderId - Order identifier
+   * @returns {object} - Order details
+   */
+  getOrder(orderId) {
+    const order = dataStore.getOrder(orderId);
+    if (!order) {
+      throw new Error("Order not found");
+    }
+    return order;
+  }
+  /**
+   * Gets all orders for a user
+   * @param {string} userId - User identifier
+   * @returns {array} - Array of orders
+   */
+  getUserOrders(userId) {
+    const allOrders = dataStore.getAllOrders();
+    return allOrders.filter((order) => order.userId === userId);
+  }
 }
 module.exports = new OrderService();
