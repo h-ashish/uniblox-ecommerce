@@ -91,7 +91,7 @@ app.get("/api/cart/:userId", (req, res) => {
  * Update cart item quantity
  * Body: { userId, productId, quantity }
  */
-app.put("api/cart/update", (req, res) => {
+app.put("/api/cart/update", (req, res) => {
   try {
     const { userId, productId, quantity } = req.body;
     if (!userId || !productId || quantity === undefined) {
@@ -111,7 +111,7 @@ app.put("api/cart/update", (req, res) => {
  * Remove item from cart
  * Body: { userId, productId }
  */
-app.delete("api/cart/delete", (req, res) => {
+app.delete("/api/cart/delete", (req, res) => {
   try {
     const { userId, productId } = req.body;
     if (!userId || !productId) {
@@ -133,7 +133,7 @@ app.delete("api/cart/delete", (req, res) => {
  * Process checkout
  * Body: { userId, discountCode? }
  */
-app.post("api/checkout", (req, res) => {
+app.post("/api/checkout", (req, res) => {
   try {
     const { userId, discountCode } = req.body;
     if (!userId) {

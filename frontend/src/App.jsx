@@ -12,10 +12,12 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [stats, setStats] = useState(null);
+  const [availableDiscounts, setAvailableDiscounts] = useState([]);
 
   useEffect(() => {
     fetchProducts();
     fetchCart();
+    fetchAvailableDiscounts();
   }, []);
 
   const fetchProducts = async () => {
@@ -39,6 +41,18 @@ function App() {
       }
     } catch (error) {
       console.error("Failed to load cart:", error);
+    }
+  };
+
+  const fetchAvailableDiscounts = async () => {
+    try {
+      const response = await fetch(`${API_URL}/admin/discount-codes`);
+      const data = await response.json();
+      if (data.success) {
+        setAvailableDiscounts(data.discountCodes);
+      }
+    } catch (error) {
+      console.error("Failed to load discount codes:", error);
     }
   };
 
@@ -85,7 +99,7 @@ function App() {
 
   const removeFromCart = async (productId) => {
     try {
-      const response = await fetch(`${API_URL}/cart/remove`, {
+      const response = await fetch(`${API_URL}/cart/delete`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, productId }),
@@ -123,7 +137,8 @@ function App() {
         setCart({ items: [], totalItems: 0, subtotal: 0 });
         setDiscountCode("");
         setShowCart(false);
-        fetchProducts(); // Refresh to show updated stock
+        fetchProducts();
+        fetchAvailableDiscounts(); // Refresh discount codes
       } else {
         showMessage(data.message, "error");
       }
@@ -153,7 +168,7 @@ function App() {
   return (
     <div className="App">
       <header className="header">
-        <h1>🛒 Uniblox Store</h1>
+        <h1 onClick={() => setShowCart(false)}>🛒 Uniblox Store</h1>
         <div className="header-actions">
           <button onClick={() => setShowCart(!showCart)} className="cart-btn">
             Cart ({cart.totalItems})
@@ -217,6 +232,28 @@ function App() {
               </div>
 
               <div className="cart-summary">
+                {availableDiscounts.length > 0 && (
+                  <div className="available-discounts">
+                    <p>
+                      <strong>Available Discount Codes:</strong>
+                    </p>
+                    <div className="discount-codes-list">
+                      {availableDiscounts.map((discount) => {
+                        return !discount.used ? (
+                          <div
+                            key={discount.code}
+                            className="discount-code-item"
+                          >
+                            <span className="code">{discount.code} </span>
+                            <span className="percentage">
+                              Use for {discount.discountPercentage}% off
+                            </span>
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
+                )}
                 <div className="discount-input">
                   <input
                     type="text"
