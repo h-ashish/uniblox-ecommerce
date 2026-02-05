@@ -1,4 +1,11 @@
+/**
+ * Order Service
+ * Handles order creation and checkout process
+ */
+
+const { v4: uuidv4 } = require("uuid");
 const dataStore = require("./dataStore");
+const cartService = require("./cartService");
 const discountService = require("./discountService");
 
 class OrderService {
@@ -9,7 +16,7 @@ class OrderService {
    * @returns {object} - Created order with discount info
    */
   checkout(userId, discountCode = null) {
-    //Validate cart
+    // Validate cart
     const cartValidation = cartService.validateCart(userId);
     if (!cartValidation.isValid) {
       throw new Error(cartValidation.message);
@@ -19,12 +26,13 @@ class OrderService {
     let discountInfo = null;
     let appliedDiscount = null;
 
-    //Validate and apply discount if provided
+    // Validate and apply discount code if provided
     if (discountCode) {
       const validation = discountService.validateDiscountCode(discountCode);
       if (!validation.isValid) {
         throw new Error(validation.message);
       }
+
       discountInfo = validation.discountInfo;
       appliedDiscount = discountService.applyDiscount(
         cart.subtotal,
@@ -32,11 +40,11 @@ class OrderService {
       );
     }
 
-    //create order
+    // Create order
     const order = {
       id: uuidv4(),
       userId,
-      items: cart.items.map((item) => ({ ...item })), //Deep Copy
+      items: cart.items.map((item) => ({ ...item })), // Deep copy
       subtotal: cart.subtotal,
       discount: appliedDiscount ? appliedDiscount.discount : 0,
       finalAmount: appliedDiscount
@@ -50,8 +58,9 @@ class OrderService {
       status: "completed",
     };
 
-    //save order
+    // Save order
     dataStore.createOrder(order);
+
     // Mark discount code as used if applied
     if (discountCode && discountInfo) {
       discountService.markAsUsed(discountCode);
@@ -82,6 +91,19 @@ class OrderService {
   }
 
   /**
+   * Updates product stock after order placement
+   * @param {array} items - Order items
+   */
+  updateProductStock(items) {
+    items.forEach((item) => {
+      const product = dataStore.getProduct(item.productId);
+      if (product) {
+        product.stock -= item.quantity;
+      }
+    });
+  }
+
+  /**
    * Gets order by ID
    * @param {string} orderId - Order identifier
    * @returns {object} - Order details
@@ -93,6 +115,7 @@ class OrderService {
     }
     return order;
   }
+
   /**
    * Gets all orders for a user
    * @param {string} userId - User identifier
@@ -102,5 +125,14 @@ class OrderService {
     const allOrders = dataStore.getAllOrders();
     return allOrders.filter((order) => order.userId === userId);
   }
+
+  /**
+   * Gets all orders (admin function)
+   * @returns {array} - Array of all orders
+   */
+  getAllOrders() {
+    return dataStore.getAllOrders();
+  }
 }
+
 module.exports = new OrderService();

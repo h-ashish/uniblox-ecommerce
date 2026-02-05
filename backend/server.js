@@ -3,6 +3,7 @@ const cors = require("cors");
 const dataStore = require("./dataStore");
 const cartService = require("./cartService");
 const orderService = require("./orderService");
+const discountService = require("./discountService");
 const app = express();
 const port = 3000;
 
@@ -59,7 +60,7 @@ app.get("/api/products/:id", (req, res) => {
  * Add item to cart
  * Body: { userId, productId, quantity }
  */
-app.post("api/cart/add", (req, res) => {
+app.post("/api/cart/add", (req, res) => {
   try {
     const { userId, productId, quantity } = req.body;
     if (!userId || !productId) {
@@ -170,4 +171,95 @@ app.get("/api/orders/user/:userId", (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+// ============ Admin Routes ============
+
+/**
+ * POST /api/admin/generate-discount
+ * Manually generate a discount code for nth order
+ * Body: { orderNumber }
+ */
+app.post("/api/admin/generate-discount", (req, res) => {
+  try {
+    const { orderNumber } = req.body;
+
+    if (!orderNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "orderNumber is required",
+      });
+    }
+
+    const discountCode = discountService.generateDiscountCode(orderNumber);
+
+    if (!discountCode) {
+      return res.json({
+        success: true,
+        message: `Order ${orderNumber} does not qualify for a discount code`,
+        discountCode: null,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Discount code generated successfully",
+      discountCode,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+/**
+ * GET /api/admin/stats
+ * Get comprehensive statistics
+ */
+app.get("/api/admin/stats", (req, res) => {
+  try {
+    const stats = dataStore.getStats();
+    res.json({ success: true, stats });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /api/admin/discount-codes
+ * Get all discount codes
+ */
+app.get("/api/admin/discount-codes", (req, res) => {
+  try {
+    const discountCodes = discountService.getAllDiscountCodes();
+    res.json({ success: true, discountCodes });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+/**
+ * GET /api/admin/orders
+ * Get all orders
+ */
+app.get("/api/admin/orders", (req, res) => {
+  try {
+    const orders = orderService.getAllOrders();
+    res.json({ success: true, orders });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Health check route
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: "Route not found" });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error("Error:", err);
+  res.status(500).json({ success: false, message: "Internal server error" });
+});
+
 module.exports = app;
